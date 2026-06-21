@@ -1,0 +1,15 @@
+# Virtual Environment
+fakenews_env/
+
+# Python
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+
+# Zip files
+*.zip
+
+# Jupyter
+.ipynb_checkpoints/
