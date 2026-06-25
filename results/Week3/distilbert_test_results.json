@@ -1,0 +1,7 @@
+{
+  "model": "DistilBERT",
+  "accuracy": 0.6448,
+  "macro_f1": 0.6313,
+  "baseline_f1": 0.5973,
+  "improvement": 0.034
+}

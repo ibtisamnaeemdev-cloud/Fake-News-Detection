@@ -324,3 +324,176 @@ Fake-News-Detection/
 ---
 
 *Log maintained by Muhammad Anas — updated every week on completion*
+## Week 3 — 25 June 2026 to 1 July 2026
+
+**Status:** ✅ Complete (Technical) | ⚠️ Partial (Writing — carried to Week 4)
+**Supervisor Meeting:** [insert date]
+
+---
+
+### Goals Set for This Week
+
+- Add handcrafted features + re-test baselines
+- Investigate Fake-class recall gap (class_weight balanced)
+- DistilBERT fine-tuning on Google Colab (GPU)
+- Run DistilBERT on test set (RQ1 answer)
+- Read 3 papers (distribution shift / domain adaptation)
+- Draft Chapter 2: Literature Review
+- Draft Chapter 3: Methodology
+
+---
+
+### Tasks Completed
+
+#### 1. Handcrafted Feature Engineering (Part A — Local PC)
+- Extracted 10 stylometric features from original `statement` column:
+  - `word_count`, `char_count`, `punct_ratio`, `exclamation`
+  - `caps_ratio`, `flesch_score` (readability)
+  - `vader_pos`, `vader_neg`, `vader_compound` (sentiment)
+  - `question_marks`
+- Combined TF-IDF (5,000 features) + handcrafted (10 features) = **5,010 total features** using `scipy.sparse.hstack`
+
+#### 2. Class Imbalance Fix — class_weight='balanced'
+- Re-trained Logistic Regression with `class_weight='balanced'` and `max_iter=3000`, `solver='lbfgs'`
+- Re-trained SVM with `class_weight='balanced'` and `max_iter=10000`
+- **Fake class F1 improved significantly: 0.5419 → 0.6002 (+0.0583)**
+- Expected Real class trade-off observed: 0.6707 → 0.6190
+
+#### 3. Validation Set Comparison (Week 2 vs Week 3)
+
+| Model | MacroF1 | FakeF1 | RealF1 |
+|---|---|---|---|
+| Week2 LR (TF-IDF only) | 0.6063 | 0.5419 | 0.6707 |
+| **Week3 LR (TF-IDF+HC+Bal)** | **0.6096** | **0.6002** | **0.6190** |
+| Week2 SVM (TF-IDF only) | 0.6014 | 0.5673 | 0.6356 |
+| Week3 SVM (TF-IDF+HC+Bal) | 0.5930 | 0.5797 | 0.6063 |
+
+#### 4. Week 3 Part A — Test Set Results
+
+| Metric | Score |
+|---|---|
+| Accuracy | 0.6133 |
+| Macro F1 | 0.6085 |
+| Fake F1 | 0.57 |
+| Real F1 | 0.65 |
+
+- Improvement over Week 2 baseline: **+0.0112**
+
+#### 5. DistilBERT Fine-Tuning (Part B — Google Colab T4 GPU)
+- Enabled T4 GPU on Google Colab
+- Loaded `distilbert-base-uncased` from Hugging Face
+- Built PyTorch `Dataset` and `DataLoader` (batch size = 32)
+- Training configuration:
+  - Epochs: 4 | Learning rate: 2e-5 | Warmup steps: 100
+  - Optimizer: AdamW | Scheduler: Linear warmup
+- Training time: ~7.5 minutes total (4 epochs)
+- Best model saved at **Epoch 3** (Val F1: 0.6349)
+- Epoch 4 showed overfitting (Val Loss increased: 0.684 → 0.739)
+
+#### 6. Training History
+
+| Epoch | Train Loss | Train F1 | Val Loss | Val F1 |
+|---|---|---|---|---|
+| 1 | 0.6640 | 0.5644 | 0.6511 | 0.6200 |
+| 2 | 0.6079 | 0.6593 | 0.6588 | 0.6207 |
+| **3** | **0.5216** | **0.7390** | **0.6841** | **0.6349** ← Best |
+| 4 | 0.4333 | 0.8015 | 0.7396 | 0.6321 |
+
+#### 7. DistilBERT — Final Test Set Results (RQ1 ANSWERED)
+
+| Metric | Score |
+|---|---|
+| Accuracy | 0.6448 |
+| **Macro F1** | **0.6313** |
+| Fake: Precision / Recall / F1 | 0.61 / 0.52 / 0.56 |
+| Real: Precision / Recall / F1 | 0.67 / 0.74 / 0.70 |
+
+```
+RQ1 FINAL ANSWER:
+Logistic Regression (Week 2) : 0.5973
+DistilBERT          (Week 3) : 0.6313
+Difference                   : +0.0340
+
+✅ DistilBERT outperforms Traditional ML by 0.0340 Macro F1
+```
+
+---
+
+### Tasks Carried Forward to Week 4
+
+| Task | Reason |
+|---|---|
+| Read 3 papers (domain adaptation/distribution shift) | Week 4 has RQ2 generalisation — papers more relevant then |
+| Draft Chapter 2: Literature Review | Waiting for Week 4 papers before writing |
+| Draft Chapter 3: Methodology | Will write after all experiments complete |
+
+---
+
+### Problems Encountered
+
+| Problem | How Resolved |
+|---|---|
+| Data files loaded in wrong order (train/test swapped) | Fixed file paths — verified row counts with assert statements |
+| LR ConvergenceWarning with lbfgs 1000 iterations | Increased max_iter to 3000 — warning resolved |
+| saga solver gave worse results (F1 dropped to 0.51) | Reverted to lbfgs — saga not suitable for sparse TF-IDF data |
+| SVM ConvergenceWarning | Increased max_iter to 10000 — resolved |
+| Colab showing CPU instead of GPU | Changed Runtime type to T4 GPU and restarted session |
+| HuggingFace token warning in Colab | Ignored — public models don't require token |
+| UNEXPECTED/MISSING weights in DistilBERT load | Normal behaviour — classification head newly initialised |
+| DistilBERT overfitting at Epoch 4 | Best model saved at Epoch 3 based on Val F1 |
+
+---
+
+### Files Produced This Week
+
+| File | Location | Description |
+|---|---|---|
+| `week3_baseline_improved.ipynb` | `notebooks/` | Part A — Handcrafted features + improved baselines |
+| `week3_distilbert_colab.ipynb` | `notebooks/` | Part B — DistilBERT fine-tuning (Colab) |
+| `lr_improved.pkl` | `models/` | LR with handcrafted features + balanced weights |
+| `svm_improved.pkl` | `models/` | SVM with handcrafted features + balanced weights |
+| `distilbert_best/` | `models/` (Google Drive) | Best DistilBERT checkpoint (Epoch 3, 268MB) |
+| `distilbert_training_curves.png` | `results/` | Loss + F1 curves across 4 epochs |
+| `week3_final_comparison.png` | `results/` | All 5 models Macro F1 bar chart |
+| `distilbert_test_results.json` | `results/` | DistilBERT test results + RQ1 answer |
+| `week3_results.json` | `results/` | Week 3 Part A test results |
+
+---
+
+### Hours Logged
+
+| Activity | Estimated Hours |
+|---|---|
+| Handcrafted feature engineering | 1.5 hrs |
+| Model training + debugging (solver issues) | 2.0 hrs |
+| Colab setup + GPU configuration | 0.5 hrs |
+| DistilBERT training (4 epochs) | 0.5 hrs (automated) |
+| Results analysis + charts | 1.0 hr |
+| Progress log writing | 1.0 hr |
+| **Total** | **6.5 hrs** |
+
+---
+
+### Key Decisions Made This Week
+
+1. **class_weight='balanced' adopted permanently** — Fake class recall improvement (+13%) justifies the small Real class trade-off; more honest evaluation for real-world fake news detection
+2. **lbfgs solver kept over saga** — Despite saga being recommended for large datasets, lbfgs gave significantly better results on sparse TF-IDF features; convergence warning acceptable at max_iter=3000
+3. **Best DistilBERT model = Epoch 3** — Epoch 4 showed clear overfitting (Val Loss increased while Train F1 hit 0.80); saving best by Val F1 was correct strategy
+4. **Handcrafted features gave marginal overall improvement** — genuine finding: LIAR's short statements (avg 17 words) limit stylometric signal; documented as dissertation finding not a failure
+5. **3 pending tasks carried to Week 4** — literature reading and dissertation writing logically aligned with Week 4's generalisation experiments
+
+---
+
+### Plan for Week 4
+
+- [ ] Read 3 papers on domain adaptation / distribution shift (RQ2)
+- [ ] Update literature matrix (14/20 papers target)
+- [ ] Set up FakeNewsNet PolitiFact subset for cross-domain testing
+- [ ] Run both LR Improved + DistilBERT on FakeNewsNet (RQ2 answer)
+- [ ] Measure and document performance drop across domains
+- [ ] Draft Chapter 2: Literature Review
+- [ ] Draft Chapter 3: Methodology
+
+---
+
+*Log maintained by Muhammad Anas — updated every week on completion*
